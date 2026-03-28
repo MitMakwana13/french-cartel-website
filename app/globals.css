@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-    --background: #0a0a0a;
-    --foreground: #ffffff;
+    --background: #0f0f0f;
+    --foreground: #f5f0e8;
 }
 
 @layer base {
@@ -21,11 +21,11 @@
     }
 
     .glass-panel {
-        @apply bg-black/40 backdrop-blur-md border border-white/10;
+        @apply bg-[#151515]/60 backdrop-blur-md border border-white/5;
     }
 
     .gold-glow {
-        @apply border-accent-gold shadow-[0_0_15px_rgba(245, 197, 24, 0.2)];
+        @apply border-accent-gold shadow-[0_0_15px_rgba(201, 168, 76, 0.2)];
     }
 }
 
@@ -36,14 +36,14 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: #0f0f0f;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #2a2a2a;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #f5c518;
+    background: #c9a84c;
 }

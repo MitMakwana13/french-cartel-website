@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react";
+import { useCartStore } from "@/store/useCartStore";
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const { openDrawer, getCartCount } = useCartStore();
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
         };
@@ -18,15 +22,12 @@ export default function Navbar() {
 
     const navLinks = [
         { name: "Menu", path: "/menu" },
-        { name: "Build Your Bowl", path: "/order" },
-        { name: "Catering", path: "/catering" },
         { name: "About", path: "/about" },
-        { name: "Contact", path: "/#contact" },
     ];
 
     return (
         <nav
-            className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-[#050505]/95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-md" : "bg-primary-bg/80"
+            className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-background/95 shadow-md backdrop-blur-md border-b border-white/5" : "bg-transparent"
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,27 +43,46 @@ export default function Navbar() {
                             <Link
                                 key={link.name}
                                 href={link.path}
-                                className="text-[0.8rem] font-bold text-text-white tracking-[2px] uppercase hover:text-accent-gold transition-colors duration-300 relative after:content-[''] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-[2px] after:bg-accent-gold hover:after:w-full after:transition-all after:duration-300"
+                                className="text-[0.8rem] font-bold text-foreground tracking-[2px] uppercase hover:text-accent-gold transition-colors duration-300 relative after:content-[''] after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-[2px] after:bg-accent-gold hover:after:w-full after:transition-all after:duration-300"
                             >
                                 {link.name}
                             </Link>
                         ))}
                     </div>
 
-                    <div className="hidden md:flex items-center">
+                    <div className="hidden md:flex items-center space-x-6">
+                        <button
+                            onClick={openDrawer}
+                            className="text-foreground hover:text-accent-gold transition flex items-center gap-2"
+                        >
+                            <ShoppingBag className="w-5 h-5" />
+                            {mounted && getCartCount() > 0 && (
+                                <span className="bg-accent-gold text-background text-xs font-bold px-2 py-0.5 rounded-full">
+                                    {getCartCount()}
+                                </span>
+                            )}
+                        </button>
                         <Link
-                            href="/order"
-                            className="border-2 border-accent-gold text-accent-gold px-6 py-2 rounded-sm text-sm font-bold uppercase tracking-wider hover:bg-accent-gold hover:text-primary-bg transition-colors duration-300"
+                            href="/menu"
+                            className="bg-accent-gold text-background px-6 py-2 rounded-sm text-sm font-bold uppercase tracking-wider hover:bg-white transition-colors duration-300"
                         >
                             Order Now
                         </Link>
                     </div>
 
                     {/* Mobile menu button */}
-                    <div className="md:hidden flex items-center">
+                    <div className="md:hidden flex items-center gap-4">
+                        <button onClick={openDrawer} className="text-foreground relative">
+                            <ShoppingBag size={24} />
+                            {mounted && getCartCount() > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-accent-gold text-background text-[10px] font-bold px-1.5 rounded-full">
+                                    {getCartCount()}
+                                </span>
+                            )}
+                        </button>
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="text-text-white hover:text-accent-gold focus:outline-none"
+                            className="text-foreground hover:text-accent-gold focus:outline-none"
                         >
                             {isOpen ? <X size={28} /> : <Menu size={28} />}
                         </button>
