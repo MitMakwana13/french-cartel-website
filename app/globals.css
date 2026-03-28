@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: #0a0a0a;
+    --foreground: #ffffff;
+}
+
+@layer base {
+    body {
+        background-color: var(--background);
+        color: var(--foreground);
+        @apply font-sans antialiased selection:bg-accent-gold selection:text-black;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .glass-panel {
+        @apply bg-black/40 backdrop-blur-md border border-white/10;
+    }
+
+    .gold-glow {
+        @apply border-accent-gold shadow-[0_0_15px_rgba(245, 197, 24, 0.2)];
+    }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #f5c518;
+}
