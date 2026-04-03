@@ -4,6 +4,8 @@ import { Instagram, MapPin, Clock } from "lucide-react";
 
 const QUICK_LINKS = [
     { name: "Menu", path: "/menu" },
+    { name: "Build Your Bowl", path: "/order" },
+    { name: "Catering", path: "/catering" },
     { name: "About", path: "/about" },
 ];
 
@@ -13,7 +15,7 @@ export default function Footer() {
             {/* Gold separator */}
             <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-accent-gold/40 to-transparent" />
 
-            <footer className="bg-background py-14 px-4 sm:px-6 lg:px-8">
+            <footer className="bg-primary-bg py-14 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pb-12 border-b border-white/5">
 
@@ -30,13 +32,13 @@ export default function Footer() {
                             </Link>
                             <div>
                                 <p className="text-accent-gold font-black tracking-[3px] text-sm uppercase">EST. 2025, Surat</p>
-                                <p className="text-foreground/30 text-sm mt-1">Surat&apos;s Most Wanted Fries.</p>
+                                <p className="text-white/30 text-sm mt-1">Surat&apos;s Most Wanted Fries.</p>
                             </div>
                             <a
                                 href="https://instagram.com/_frenchcartel"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-foreground/40 text-sm hover:text-accent-gold transition-colors mt-1"
+                                className="flex items-center gap-2 text-white/40 text-sm hover:text-accent-gold transition-colors mt-1"
                             >
                                 <Instagram className="h-4 w-4" />
                                 @_frenchcartel
@@ -47,7 +49,7 @@ export default function Footer() {
                         <div className="flex flex-col items-center gap-5 text-center">
                             <div className="flex items-start gap-3 text-left max-w-xs">
                                 <MapPin className="h-4 w-4 text-accent-gold mt-1 shrink-0" />
-                                <p className="text-foreground/50 text-sm leading-relaxed">
+                                <p className="text-white/50 text-sm leading-relaxed">
                                     Hazira Rd, near Pal RTO, opp. Sangini Aspire,<br />
                                     Adajan, Surat, Gujarat 394510
                                 </p>
@@ -58,28 +60,28 @@ export default function Footer() {
                                     href="https://www.instagram.com/_frenchcartel/"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-accent-gold text-sm font-bold hover:text-foreground transition-colors"
+                                    className="text-accent-gold text-sm font-bold hover:text-white transition-colors"
                                 >
                                     @_frenchcartel
                                 </a>
                             </div>
                             <div className="flex items-start gap-3 text-left">
                                 <Clock className="h-4 w-4 text-accent-gold mt-0.5 shrink-0" />
-                                <p className="text-foreground/50 text-sm leading-relaxed">
+                                <p className="text-white/50 text-sm leading-relaxed">
                                     Open: Evenings<br />
-                                    <span className="text-foreground/25 text-xs">(Check Instagram for exact timings)</span>
+                                    <span className="text-white/25 text-xs">(Check Instagram for exact timings)</span>
                                 </p>
                             </div>
                         </div>
 
                         {/* ── RIGHT: Quick Links ── */}
                         <div className="flex flex-col items-center md:items-end gap-3">
-                            <h4 className="text-foreground/30 font-bold uppercase tracking-[3px] text-xs mb-2">Quick Links</h4>
+                            <h4 className="text-white/30 font-bold uppercase tracking-[3px] text-xs mb-2">Quick Links</h4>
                             {QUICK_LINKS.map(link => (
                                 <Link
                                     key={link.name}
                                     href={link.path}
-                                    className="text-foreground/50 text-sm hover:text-accent-gold transition-colors duration-200 font-medium"
+                                    className="text-white/50 text-sm hover:text-accent-gold transition-colors duration-200 font-medium"
                                 >
                                     {link.name}
                                 </Link>
@@ -89,7 +91,7 @@ export default function Footer() {
 
                     {/* ── BOTTOM BAR ── */}
                     <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                        <p className="text-foreground/20 text-xs tracking-wide text-center md:text-left">
+                        <p className="text-white/20 text-xs tracking-wide text-center md:text-left">
                             © 2025 French Cartel · Surat, Gujarat · All Rights Reserved
                         </p>
                         <p className="text-[#ff5c5c] text-xs font-black uppercase tracking-[2px] border border-[#E3342F]/30 bg-[#E3342F]/8 px-4 py-1.5">
