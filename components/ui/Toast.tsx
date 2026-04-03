@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 
-type ToastCtx = { showToast: (msg: string) => void };
+type ToastCtx = { showToast: (msg: string, duration?: number) => void };
 const Ctx = createContext<ToastCtx>({ showToast: () => { } });
 
 export function useToast() { return useContext(Ctx); }
@@ -12,11 +12,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const [visible, setVisible] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const showToast = useCallback((message: string) => {
+    const showToast = useCallback((message: string, duration: number = 2800) => {
         if (timerRef.current) clearTimeout(timerRef.current);
         setMsg(message);
         setVisible(true);
-        timerRef.current = setTimeout(() => setVisible(false), 2800);
+        timerRef.current = setTimeout(() => setVisible(false), duration);
     }, []);
 
     return (

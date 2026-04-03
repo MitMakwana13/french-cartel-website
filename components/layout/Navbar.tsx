@@ -7,12 +7,20 @@ import { Menu, X } from "lucide-react";
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [storeStatus, setStoreStatus] = useState<any>(null);
 
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener("scroll", handleScroll);
+
+        // Fetch store status dynamically
+        fetch('/api/settings/status')
+           .then(res => res.json())
+           .then(data => setStoreStatus(data))
+           .catch(() => {});
+
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
@@ -50,12 +58,18 @@ export default function Navbar() {
                     </div>
 
                     <div className="hidden md:flex items-center">
-                        <Link
-                            href="/order"
-                            className="border-2 border-accent-gold text-accent-gold px-6 py-2 rounded-sm text-sm font-bold uppercase tracking-wider hover:bg-accent-gold hover:text-primary-bg transition-colors duration-300"
-                        >
-                            Order Now
-                        </Link>
+                        {storeStatus?.is_open === false ? (
+                           <div className="border-2 border-white/20 text-white/30 px-6 py-2 rounded-sm text-sm font-bold uppercase tracking-wider cursor-not-allowed">
+                               Currently Closed
+                           </div>
+                        ) : (
+                           <Link
+                               href="/order"
+                               className="border-2 border-accent-gold text-accent-gold px-6 py-2 rounded-sm text-sm font-bold uppercase tracking-wider hover:bg-accent-gold hover:text-primary-bg transition-colors duration-300"
+                           >
+                               Order Now
+                           </Link>
+                        )}
                     </div>
 
                     {/* Mobile menu button */}
@@ -84,13 +98,19 @@ export default function Navbar() {
                                 {link.name}
                             </Link>
                         ))}
-                        <Link
-                            href="/order"
-                            onClick={() => setIsOpen(false)}
-                            className="mt-6 block w-full text-center border-2 border-accent-gold bg-accent-gold text-primary-bg px-6 py-3 rounded-sm text-base font-bold uppercase tracking-wider"
-                        >
-                            Order Now
-                        </Link>
+                        {storeStatus?.is_open === false ? (
+                            <div className="mt-6 block w-full text-center border-2 border-white/10 bg-card-bg text-white/30 px-6 py-3 rounded-sm text-base font-bold uppercase tracking-wider opacity-50">
+                                Currently Closed
+                            </div>
+                        ) : (
+                            <Link
+                                href="/order"
+                                onClick={() => setIsOpen(false)}
+                                className="mt-6 block w-full text-center border-2 border-accent-gold bg-accent-gold text-primary-bg px-6 py-3 rounded-sm text-base font-bold uppercase tracking-wider"
+                            >
+                                Order Now
+                            </Link>
+                        )}
                     </div>
                 </div>
             )}

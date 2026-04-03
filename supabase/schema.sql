@@ -1,6 +1,13 @@
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Clear existing tables to apply the new schema cleanly
+DROP TABLE IF EXISTS public.menu_items CASCADE;
+DROP TABLE IF EXISTS public.store_settings CASCADE;
+DROP TABLE IF EXISTS public.operating_hours CASCADE;
+-- Note: Re-creating orders table as well to ensure it has the new order_number identity column
+DROP TABLE IF EXISTS public.orders CASCADE;
+
 -- 1. menu_items
 CREATE TABLE IF NOT EXISTS public.menu_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,6 +54,7 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
     announcement TEXT,
     closed_reason TEXT,
     whatsapp_number TEXT DEFAULT '919924247897',
+    auto_close_at_close_time BOOLEAN DEFAULT false,
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -61,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.operating_hours (
 
 -- Realtime for orders
 -- Enable Realtime by adding the table to the `supabase_realtime` publication
-ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
 
 -- trigger function for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -172,5 +180,5 @@ INSERT INTO public.operating_hours (id, day_name, is_open, open_time, close_time
 (6, 'Saturday', true, '16:00', '23:00');
 
 -- Store Settings
-INSERT INTO public.store_settings (id, is_open, estimated_wait_minutes, max_active_orders, open_time, close_time) VALUES
-(1, true, 15, 20, '16:00', '23:00');
+INSERT INTO public.store_settings (id, is_open, estimated_wait_minutes, max_active_orders, open_time, close_time, auto_close_at_close_time) VALUES
+(1, true, 15, 20, '16:00', '23:00', false);
