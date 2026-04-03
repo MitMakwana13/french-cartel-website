@@ -13,6 +13,8 @@ function TrackedOrder() {
 
     const [status, setStatus] = useState<string>("new");
     const [estimatedTime, setEstimatedTime] = useState<string | null>(null);
+    const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+    const [orderCustomerPhone, setOrderCustomerPhone] = useState<string | null>(null);
 
     // Native audio initializer for success chime
     const playSuccessChime = () => {
@@ -56,6 +58,8 @@ function TrackedOrder() {
                 if (res.ok) {
                     const { data } = await res.json();
                     setStatus(data.status);
+                    if (data.rejection_reason) setRejectionReason(data.rejection_reason);
+                    if (data.customer_phone) setOrderCustomerPhone(data.customer_phone);
                     
                     if (data.estimated_ready_at) {
                         const readyTime = new Date(data.estimated_ready_at);
@@ -86,6 +90,8 @@ function TrackedOrder() {
                 (payload) => {
                     const updatedOrder = payload.new;
                     setStatus(updatedOrder.status);
+                    if (updatedOrder.rejection_reason) setRejectionReason(updatedOrder.rejection_reason);
+                    if (updatedOrder.customer_phone) setOrderCustomerPhone(updatedOrder.customer_phone);
                     
                     if (updatedOrder.estimated_ready_at) {
                         const readyTime = new Date(updatedOrder.estimated_ready_at);
@@ -104,7 +110,7 @@ function TrackedOrder() {
                     } else if (updatedOrder.status === 'cancelled' && status !== 'cancelled') {
                         if ("Notification" in window && Notification.permission === "granted") {
                             new Notification(`French Cartel — Order #${orderNumInt}`, {
-                                body: "❌ Urgent: Your order had to be cancelled. Open the app for details."
+                                body: `❌ Your order was cancelled. ${updatedOrder.rejection_reason || 'Please contact us for details.'}`
                             });
                         }
                     }
@@ -125,14 +131,27 @@ function TrackedOrder() {
 
     return (
         <div className="max-w-md w-full text-center relative z-10 mx-auto px-4">
-            {/* Cancelled Banner */}
+            {/* Cancelled Banner — Rich version with reason + refund message */}
             {status === 'cancelled' && (
                 <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 w-full animate-fade-in-up z-20">
-                    <div className="bg-[#ef4444]/20 border-2 border-[#ef4444] shadow-[0_0_40px_rgba(239,68,68,0.4)] px-4 py-4 rounded-xl flex flex-col items-center justify-center gap-2 mb-6 backdrop-blur-md">
-                        <span className="font-black font-display text-[#ef4444] text-xl tracking-wide uppercase">Order Cancelled</span>
-                        <p className="text-white/80 text-xs font-bold leading-tight">We could not process this order.</p>
-                        <a href="https://wa.me/919924247897?text=Hi%20French%20Cartel,%20my%20order%20got%20cancelled.%20Can%20you%20help?" target="_blank" rel="noopener noreferrer" className="mt-2 bg-[#25D366] text-black text-xs font-black uppercase px-3 py-1.5 rounded-sm">
-                            Contact WhatsApp Support
+                    <div className="bg-[#ef4444]/15 border-2 border-[#ef4444]/60 shadow-[0_0_40px_rgba(239,68,68,0.3)] px-5 py-5 rounded-xl flex flex-col items-start gap-3 mb-6 backdrop-blur-md">
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl">❌</span>
+                            <span className="font-black font-display text-[#ef4444] text-xl tracking-wide uppercase">Order Cancelled</span>
+                        </div>
+                        <p className="text-white/80 text-sm leading-relaxed">
+                            {rejectionReason || "Your order was cancelled. Please contact us for details."}
+                        </p>
+                        <div className="bg-white/5 border border-white/10 px-3 py-2 w-full rounded-sm">
+                            <p className="text-white/50 text-xs">💳 Your payment of <span className="text-white font-bold">₹{searchParams.get('amount') || '—'}</span> will be refunded within <span className="text-white font-bold">3–5 business days</span> automatically.</p>
+                        </div>
+                        <a
+                            href={`https://wa.me/919924247897?text=${encodeURIComponent(`Hi French Cartel! My order #${orderNumber} was cancelled. Can you help me? 🙏`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-black text-xs font-black uppercase px-4 py-2.5 rounded-sm tracking-wider"
+                        >
+                            💬 WhatsApp Us
                         </a>
                     </div>
                 </div>

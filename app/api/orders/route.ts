@@ -126,6 +126,39 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    // ── Async: increment daily_sold_count for each item that has daily_limit ──
+    // We don't await this so it doesn't block the checkout response.
+    // Fire and forget — failure here won't break the order.
+    (async () => {
+      try {
+        const todayIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+        // Collect all item names to look up their menu_item IDs
+        const itemNames: string[] = [
+          items.size?.name,
+          ...(items.addons || []).map((a: any) => a.name),
+          ...(items.drinks || []).map((d: any) => d.name),
+        ].filter(Boolean);
+
+        if (itemNames.length === 0) return;
+
+        // Fetch matching menu item IDs tracking daily limits
+        const { data: menuItems } = await supabase
+          .from('menu_items')
+          .select('id')
+          .in('name', itemNames)
+          .not('daily_limit', 'is', null);
+ 
+        if (!menuItems || menuItems.length === 0) return;
+ 
+        // Simply INSERT into the sales log — the trigger handles the rest!
+        const sales = menuItems.map(mi => ({ menu_item_id: mi.id }));
+        await supabase.from('menu_item_sales').insert(sales);
+      } catch (e) {
+        console.error('[daily_sold_count] Background logging failed:', e);
+      }
+    })();
+
     return NextResponse.json({ data });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

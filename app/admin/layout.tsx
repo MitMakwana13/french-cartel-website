@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import QuickStockFAB from "@/components/admin/QuickStockPanel";
 
 export const metadata = {
   title: "Admin | French Cartel",
@@ -33,6 +34,7 @@ export default async function AdminLayout({
       <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative w-full h-full">
         {children}
       </main>
+      {user && <QuickStockFAB />}
     </div>
   );
 }

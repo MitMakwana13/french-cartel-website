@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowLeft, Check, ShoppingBag, Lock, Zap, Star } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import type { MenuItem } from "@/lib/supabase/types";
+import { isItemAvailable, getLabelColor } from "@/lib/menu-availability";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Size = MenuItem;
@@ -33,21 +34,32 @@ function getFormattedTime12(time24: string) {
 }
 
 // ─── UI Components ───────────────────────────────────────────────────────────
-function Chip({ label, selected, onClick, disabled }: {
+function Chip({ label, selected, onClick, disabled, stockStatus, availability }: {
     label: string; selected: boolean; onClick: () => void; disabled: boolean;
+    stockStatus?: string;
+    availability?: { available: boolean; reason?: string; label?: string; labelColor?: string; almostGone?: boolean };
 }) {
+    const isOut = !availability ? stockStatus === 'out_of_stock' : !availability.available;
+    const isLow = stockStatus === 'low_stock';
+    const badgeText = availability?.label || (isLow ? '⚡ Almost Gone' : null);
+    const badgeColor = availability?.labelColor || 'text-amber-400 bg-[#111] border-amber-400/30';
+    const unavailableReason = !availability?.available ? availability?.reason : null;
     return (
         <button
             type="button"
-            onClick={onClick}
-            disabled={disabled && !selected}
+            onClick={isOut ? undefined : onClick}
+            disabled={(disabled && !selected) || isOut}
             className={`relative flex items-center gap-2 px-4 py-3 border text-sm font-bold tracking-wide transition-all duration-200
-                ${selected
-                    ? "border-accent-gold bg-accent-gold text-primary-bg shadow-[0_0_12px_rgba(245,197,24,0.4)]"
-                    : "border-white/10 bg-card-bg text-white/80 hover:border-white/30"
+                ${isOut
+                    ? 'border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed line-through'
+                    : selected
+                    ? 'border-accent-gold bg-accent-gold text-primary-bg shadow-[0_0_12px_rgba(245,197,24,0.4)]'
+                    : 'border-white/10 bg-card-bg text-white/80 hover:border-white/30'
                 }
-                ${disabled && !selected ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                ${(disabled && !selected && !isOut) ? 'opacity-40 cursor-not-allowed' : isOut ? '' : 'cursor-pointer'}`}
         >
+            {isOut && <span className="text-[0.55rem] font-black text-white/20 absolute -top-2 left-1/2 -translate-x-1/2 bg-[#111] px-1.5 whitespace-nowrap uppercase tracking-wider">{unavailableReason || 'Sold Out'}</span>}
+            {!isOut && badgeText && !selected && <span className={`text-[0.55rem] font-black absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 border whitespace-nowrap uppercase tracking-wider ${badgeColor}`}>{badgeText}</span>}
             {selected && <Check className="w-3 h-3 shrink-0" />}
             {label}
         </button>
@@ -108,15 +120,20 @@ export default function BowlBuilder() {
 
                 const menuData = await menuRes.json();
                 if (menuData.data) {
-                    const items: MenuItem[] = menuData.data;
+                    const items: (MenuItem & { availability?: any })[] = menuData.data;
                     
-                    // Filter arrays by availability naturally
-                    const availableItems = items.filter(i => i.is_available);
-                    setSizes(availableItems.filter(i => i.category === 'size'));
-                    setSauces(availableItems.filter(i => i.category === 'sauce'));
-                    setSeasonings(availableItems.filter(i => i.category === 'seasoning'));
-                    setAddons(availableItems.filter(i => i.category === 'addon'));
-                    setDrinks(availableItems.filter(i => i.category === 'drink'));
+                    // Include all items; let availability field control what's selectable
+                    // out_of_stock items show as sold out; day/time restricted items explain why
+                    const sizes = items.filter(i => i.category === 'size');
+                    const notHardOut = items.filter(i => {
+                        const av = i.availability || isItemAvailable(i);
+                        return av.available || i.availability?.reason !== 'Sold out';
+                    });
+                    setSizes(sizes);
+                    setSauces(items.filter(i => i.category === 'sauce'));
+                    setSeasonings(items.filter(i => i.category === 'seasoning'));
+                    setAddons(items.filter(i => i.category === 'addon'));
+                    setDrinks(items.filter(i => i.category === 'drink'));
                 }
             } catch (err) {
                 console.error("Failed to load systems", err);
@@ -379,17 +396,38 @@ export default function BowlBuilder() {
                         <div className="w-full">
                             <StepHeading label="Choose Your Size" sub="The base of your bowl" />
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-                                {rawSizes.map(size => (
+                                {rawSizes.map(size => {
+                                    const av = (size as any).availability || isItemAvailable(size);
+                                    const isOut = !av.available;
+                                    const badgeText = av.label;
+                                    const badgeColor = av.labelColor || 'bg-accent-gold text-black';
+                                    
+                                    return (
                                     <button
                                         key={size.id}
                                         type="button"
-                                        onClick={() => setSelectedSize(size)}
+                                        onClick={isOut ? undefined : () => setSelectedSize(size)}
+                                        disabled={isOut}
                                         className={`relative p-4 md:p-6 border-2 text-center transition-all duration-200 group flex items-center flex-col
-                                            ${selectedSize?.id === size.id
-                                                ? "border-accent-gold bg-accent-gold/10 shadow-[0_0_20px_rgba(245,197,24,0.2)] scale-[1.03] z-10"
-                                                : "border-white/10 bg-primary-bg hover:border-accent-gold/40 hover:-translate-y-0.5 z-0"}`}
+                                            ${isOut
+                                                ? 'border-white/5 opacity-40 cursor-not-allowed'
+                                                : selectedSize?.id === size.id
+                                                ? 'border-accent-gold bg-accent-gold/10 shadow-[0_0_20px_rgba(245,197,24,0.2)] scale-[1.03] z-10'
+                                                : 'border-white/10 bg-primary-bg hover:border-accent-gold/40 hover:-translate-y-0.5 z-0'}`}
                                     >
-                                        {size.is_popular && (
+                                        {isOut && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-2">
+                                                <span className="text-[0.6rem] font-black text-[#ef4444] uppercase tracking-widest leading-tight mb-1">
+                                                    {av.reason || 'Unavailable'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!isOut && badgeText && (
+                                            <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[0.55rem] font-black tracking-[2px] uppercase px-2.5 py-0.5 whitespace-nowrap shadow-md border border-white/10 ${badgeColor}`}>
+                                                {badgeText}
+                                            </div>
+                                        )}
+                                        {!isOut && !badgeText && size.is_popular && (
                                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent-gold text-black text-[0.55rem] font-black tracking-[2px] uppercase px-2.5 py-0.5 flex items-center gap-1 whitespace-nowrap shadow-md">
                                                 <Star className="w-2.5 h-2.5 fill-current" /> Popular
                                             </div>
@@ -404,8 +442,11 @@ export default function BowlBuilder() {
                                             </div>
                                         )}
                                     </button>
-                                ))}
-                                {rawSizes.length === 0 && <p className="col-span-full text-white/30 text-sm">No sizes available right now.</p>}
+                                )})}
+                                {rawSizes.filter(s => {
+                                    const av = (s as any).availability || isItemAvailable(s);
+                                    return av.available;
+                                }).length === 0 && <p className="col-span-full text-white/30 text-sm">No sizes available right now.</p>}
                             </div>
                         </div>
                     )}
@@ -415,10 +456,17 @@ export default function BowlBuilder() {
                         <div className="w-full">
                             <StepHeading label="Pick Your Sauce" sub={`Select up to 2 · ${selectedSauces.length}/2 chosen`} />
                             <div className="grid grid-cols-2 gap-2 w-full">
-                                {rawSauces.map(s => (
-                                    <Chip key={s.id} label={`${s.emoji || ''} ${s.name}`} selected={!!selectedSauces.find(x => x.id === s.id)}
-                                        onClick={() => toggleSauce(s)} disabled={selectedSauces.length >= 2} />
-                                ))}
+                                {rawSauces.map(s => {
+                                    const av = (s as any).availability || isItemAvailable(s);
+                                    return (
+                                        <Chip key={s.id} label={`${s.emoji || ''} ${s.name}`}
+                                            selected={!!selectedSauces.find(x => x.id === s.id)}
+                                            onClick={() => toggleSauce(s)}
+                                            disabled={selectedSauces.length >= 2}
+                                            stockStatus={s.stock_status}
+                                            availability={av} />
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -428,10 +476,17 @@ export default function BowlBuilder() {
                         <div className="w-full">
                             <StepHeading label="Pick Your Seasoning" sub={`Select up to 2 · ${selectedSeasonings.length}/2 chosen`} />
                             <div className="grid grid-cols-2 gap-2 w-full">
-                                {rawSeasonings.map(s => (
-                                    <Chip key={s.id} label={`${s.emoji || ''} ${s.name}`} selected={!!selectedSeasonings.find(x => x.id === s.id)}
-                                        onClick={() => toggleSeasoning(s)} disabled={selectedSeasonings.length >= 2} />
-                                ))}
+                                {rawSeasonings.map(s => {
+                                    const av = (s as any).availability || isItemAvailable(s);
+                                    return (
+                                        <Chip key={s.id} label={`${s.emoji || ''} ${s.name}`}
+                                            selected={!!selectedSeasonings.find(x => x.id === s.id)}
+                                            onClick={() => toggleSeasoning(s)}
+                                            disabled={selectedSeasonings.length >= 2}
+                                            stockStatus={s.stock_status}
+                                            availability={av} />
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -442,16 +497,29 @@ export default function BowlBuilder() {
                             <StepHeading label="Any Add-ons?" sub="Make it extra · optional" />
                             <div className="space-y-3 w-full">
                                 {rawAddons.map(a => {
+                                    const av = (a as any).availability || isItemAvailable(a);
+                                    const isOut = !av.available;
                                     const sel = !!selectedAddons.find(x => x.id === a.id);
+                                    const badgeText = av.label;
+                                    const badgeColor = av.labelColor || 'text-amber-400 bg-[#111] border-amber-400/30';
+
                                     return (
-                                        <button key={a.id} type="button" onClick={() => toggleAddon(a)}
-                                            className={`w-full flex items-center justify-between p-4 border transition-all duration-200
-                                                ${sel ? "border-accent-gold bg-accent-gold/10 shadow-[0_0_15px_rgba(245,197,24,0.15)]"
+                                        <button key={a.id} type="button" 
+                                            onClick={isOut ? undefined : () => toggleAddon(a)}
+                                            disabled={isOut}
+                                            className={`w-full flex items-center justify-between p-4 border transition-all duration-200 relative overflow-hidden
+                                                ${isOut
+                                                    ? "border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed grayscale"
+                                                    : sel ? "border-accent-gold bg-accent-gold/10 shadow-[0_0_15px_rgba(245,197,24,0.15)]"
                                                     : "border-white/8 bg-primary-bg hover:border-accent-gold/30"}`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 {a.emoji && <span className="text-2xl">{a.emoji}</span>}
-                                                <span className="font-bold text-white text-base text-left">{a.name}</span>
+                                                <div className="flex flex-col items-start translate-y-0.5">
+                                                    <span className="font-bold text-white text-base text-left leading-none">{a.name}</span>
+                                                    {isOut && <span className="text-[0.6rem] text-[#ef4444] font-black uppercase tracking-widest mt-1">{av.reason || 'Sold Out'}</span>}
+                                                    {!isOut && badgeText && <span className={`text-[0.6rem] font-black uppercase tracking-widest px-1.5 border mt-1 ${badgeColor}`}>{badgeText}</span>}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-3 shrink-0">
                                                 <span className="text-accent-gold font-black text-base md:text-lg whitespace-nowrap">+ ₹{a.price}</span>
@@ -468,22 +536,42 @@ export default function BowlBuilder() {
                     )}
 
                     {/* STEP 5 — Drinks */}
+                    {/* STEP 5 — Drinks */}
                     {step === 5 && (
                         <div className="w-full">
                             <StepHeading label="Wash It Down" sub="Optional · pick any" />
                             <div className="grid grid-cols-2 gap-3 w-full">
                                 {rawDrinks.map(d => {
+                                    const av = (d as any).availability || isItemAvailable(d);
+                                    const isOut = !av.available;
                                     const sel = !!selectedDrinks.find(x => x.id === d.id);
+                                    const badgeText = av.label;
+                                    const badgeColor = av.labelColor || 'text-amber-400 bg-[#111] border-amber-400/30';
+
                                     return (
-                                        <button key={d.id} type="button" onClick={() => toggleDrink(d)}
+                                        <button key={d.id} type="button" 
+                                            onClick={isOut ? undefined : () => toggleDrink(d)}
+                                            disabled={isOut}
                                             className={`flex flex-col items-center gap-2 p-5 border transition-all duration-200 relative
-                                                ${sel ? "border-accent-gold bg-accent-gold/10"
+                                                ${isOut
+                                                    ? "border-white/5 bg-white/[0.02] grayscale opacity-50 cursor-not-allowed"
+                                                    : sel ? "border-accent-gold bg-accent-gold/10"
                                                     : "border-white/8 bg-primary-bg hover:border-accent-gold/30"}`}
                                         >
+                                            {isOut && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-10 px-2 text-center">
+                                                    <span className="text-[0.55rem] font-black text-[#ef4444] uppercase tracking-widest">{av.reason || 'Sold Out'}</span>
+                                                </div>
+                                            )}
+                                            {!isOut && badgeText && (
+                                                <div className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[0.5rem] font-black tracking-[2px] uppercase px-1.5 py-0.5 border z-20 whitespace-nowrap bg-black ${badgeColor}`}>
+                                                    {badgeText}
+                                                </div>
+                                            )}
                                             {d.emoji && <span className="text-3xl md:text-4xl">{d.emoji}</span>}
-                                            <span className="font-bold text-white text-center text-sm md:text-base">{d.name}</span>
+                                            <span className="font-bold text-white text-center text-sm md:text-base leading-tight mt-1">{d.name}</span>
                                             <span className="text-accent-gold font-black">+ ₹{d.price}</span>
-                                            {sel && <div className="absolute top-2 right-2 bg-accent-gold rounded-full p-0.5"><Check className="w-3 h-3 text-black" /></div>}
+                                            {sel && <div className="absolute top-2 right-2 bg-accent-gold rounded-full p-0.5 z-20"><Check className="w-3 h-3 text-black" /></div>}
                                         </button>
                                     );
                                 })}

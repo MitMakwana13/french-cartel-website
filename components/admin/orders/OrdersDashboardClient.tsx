@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Search } from "lucide-react";
 import OrderCard from "./OrderCard";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
-import type { Order, OrderStatus } from "@/lib/supabase/types";
+import type { Order, OrderStatus, StockStatus, StoreSettings } from "@/lib/supabase/types";
+import StockStrip from "@/components/admin/StockStrip";
+
 
 export default function OrdersDashboardClient() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -94,16 +96,26 @@ export default function OrdersDashboardClient() {
     };
   }, [supabase, showToast]);
 
-  const handleUpdateStatus = async (id: string, prevStatus: OrderStatus, newStatus: OrderStatus) => {
+  const handleUpdateStatus = async (id: string, prevStatus: OrderStatus, newStatus: OrderStatus, extra?: Record<string, any>) => {
     // Optimistic UI update
     setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
+      prev.map((o) => {
+        if (o.id !== id) return o;
+        return {
+          ...o,
+          status: newStatus,
+          ...(extra?.rejection_reason ? { rejection_reason: extra.rejection_reason } : {}),
+          ...(extra?.rejection_category ? { rejection_category: extra.rejection_category } : {}),
+          cancelled_at: newStatus === "cancelled" ? new Date().toISOString() : o.cancelled_at,
+          cancelled_by: newStatus === "cancelled" ? "admin" : o.cancelled_by,
+        };
+      })
     );
     try {
       await fetch(`/api/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, cancelled_by: "admin", ...extra }),
       });
     } catch (err) {
       console.error("Failed to update status");
@@ -149,7 +161,10 @@ export default function OrdersDashboardClient() {
 
   return (
     <div className="w-full h-full flex flex-col pt-4 md:pt-8 md:px-8">
-      
+
+      {/* Stock Status Strip */}
+      <StockStrip />
+
       {/* Top Stats Strip & Throttle Warning */}
       {settings && settings.max_active_orders > 0 && (newOrders.length + activeOrders.length) >= Math.floor(settings.max_active_orders * 0.9) && (
         <div className="bg-[#ef4444]/20 border-l-4 border-[#ef4444] px-4 py-3 mb-6 rounded-r-sm max-w-2xl mx-auto md:mx-0 animate-pulse">

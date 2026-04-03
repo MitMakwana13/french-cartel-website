@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, Utensils, Settings, LogOut, Volume2, VolumeX } from "lucide-react";
+import { ClipboardList, Utensils, Settings, LogOut, Volume2, VolumeX, TrendingUp, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AdminSidebar() {
@@ -90,7 +90,9 @@ export default function AdminSidebar() {
 
   const navItems = [
     { name: "Orders", href: "/admin", icon: ClipboardList },
+    { name: "Sales", href: "/admin/sales", icon: TrendingUp },
     { name: "Menu", href: "/admin/menu", icon: Utensils },
+    { name: "Customers", href: "/admin/customers", icon: Users },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 

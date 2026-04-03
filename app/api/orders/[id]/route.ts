@@ -27,7 +27,14 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { status } = body;
+    const {
+      status,
+      rejection_reason,
+      rejection_category,
+      cancelled_by = 'admin',
+      auto_mark_out_of_stock,
+      out_of_stock_item_id,
+    } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'Missing status' }, { status: 400 });
@@ -35,6 +42,7 @@ export async function PATCH(
 
     let updatePayload: any = { status };
 
+    // Accepted → calculate ready time
     if (status === 'accepted') {
       const { data: settings } = await supabase
         .from('store_settings')
@@ -47,6 +55,14 @@ export async function PATCH(
       updatePayload.estimated_ready_at = readyAt.toISOString();
     }
 
+    // Cancellation — attach rejection metadata
+    if (status === 'cancelled') {
+      updatePayload.cancelled_at = new Date().toISOString();
+      updatePayload.cancelled_by = cancelled_by;
+      if (rejection_reason) updatePayload.rejection_reason = rejection_reason;
+      if (rejection_category) updatePayload.rejection_category = rejection_category;
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .update(updatePayload)
@@ -55,6 +71,14 @@ export async function PATCH(
       .single();
 
     if (error) throw error;
+
+    // Auto-mark item as out of stock if requested
+    if (status === 'cancelled' && auto_mark_out_of_stock && out_of_stock_item_id) {
+      await supabase
+        .from('menu_items')
+        .update({ stock_status: 'out_of_stock', is_available: false })
+        .eq('id', out_of_stock_item_id);
+    }
 
     return NextResponse.json({ data });
   } catch (error: any) {
@@ -69,10 +93,13 @@ export async function DELETE(
   const supabase = createClient();
   const id = params.id;
 
-  // Soft delete: set status to cancelled
   const { data, error } = await supabase
     .from('orders')
-    .update({ status: 'cancelled' })
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: 'admin',
+    })
     .eq('id', id)
     .select()
     .single();

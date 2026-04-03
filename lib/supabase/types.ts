@@ -1,5 +1,8 @@
 export type MenuCategory = 'size' | 'sauce' | 'seasoning' | 'addon' | 'drink';
 export type OrderStatus = 'new' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
+export type RejectionCategory = 'out_of_stock' | 'closing_soon' | 'too_busy' | 'item_unavailable' | 'other';
+export type CancelledBy = 'admin' | 'system' | 'customer';
 
 export interface MenuItem {
   id: string;
@@ -14,9 +17,19 @@ export interface MenuItem {
   is_popular: boolean;
   sort_order: number;
   max_selection: number;
+  stock_status: StockStatus;
+  // Advanced availability
+  available_days: number[] | null;       // 0=Sun…6=Sat, null=everyday
+  available_from: string | null;         // "HH:MM" IST
+  available_until: string | null;        // "HH:MM" IST
+  customer_label: string | null;         // badge shown to customers
+  daily_limit: number | null;            // null = unlimited
+  daily_sold_count: number | null;       // resets daily
+  daily_sold_reset_date: string | null;  // ISO date string
   created_at: string;
   updated_at: string;
 }
+
 
 export interface OrderItem {
   size: { name: string; code: string; price: number };
@@ -38,6 +51,10 @@ export interface Order {
   payment_id: string | null;
   payment_status: string;
   estimated_ready_at: string | null;
+  rejection_reason: string | null;
+  rejection_category: RejectionCategory | null;
+  cancelled_at: string | null;
+  cancelled_by: CancelledBy | null;
   created_at: string;
   updated_at: string;
 }
